@@ -1,10 +1,10 @@
-﻿# Arduino Library for Seeed Studio MR24HPC1 25GHz mmWave Sensor
+# Arduino Library for Seeed Studio MR24HPC1 25GHz mmWave Sensor
 
 The "MR24HPC1 24GHz mmWave Sensor Human Static Presence Module Lite" from Seeed Studio has a detection range of up to 5m. 
 
 It runs on 5V, 3.3V cannot be used. Communications uses a proprietary binary serial protocol at a fixed rate of 115200 baud. 
 
-<img height="300" alt="image" src="images/mr24hpc1-board.jpg" />
+<img height="300" alt="image" src="images/mr24hpc1-boards.jpg" />
 
 The board seems to have two mmWave sensor chips. The chip connected to the gold pads is an ICLEGEND S3KM111L mmWave radar chip. Below that, there's a larger MicRadar T15BT chip, which is also an mmWave radar sensor module...
 
@@ -115,18 +115,18 @@ TODO diagram and photo
 <!-- ========================================================================================== -->
 
 <a name="windows-application"></a>
-## Windows Application (MR24HPC1.exe)
+## Windows Application, MR24HPC1.exe
 
 A Windows application called `MR24HPC1.exe` has been developed to help with configuration, testing and visualisation. This application will help you understand the configuration parameters and sensor readings.
 
-<img height="300" alt="image" src="images/mr24hpc1-app.png" />
+<img height="300" alt="image" src="images/mr24hpc1-app.jpg" />
 
 
-The full User Manual for the `MR24HPC1.exe` application is here,
+The full User Manual for the `MR24HPC1.exe` application is here, \
 https://muman.ch/muman/index.htm?muman-mr24hpc1-mmwave-sensor.htm
 
 The source for this application (Visual Studio 2026, C#) will soon be on github, but until then you can download the executable from here, \
-https://muman.ch/muman/MR24HPC1.exe
+https://muman.ch/muman/MR24HPC1.exe \
 (Windows will have a 'Windows Protected Your PC' fit if you try to download and run it. It's very safe though, it does not use any internet connections or even write to the hard drive. So just press 'Run Anyway'.)
 
 **TODO check this**  Once configured by the application, you do not need to configure with code in `setup()`.
@@ -358,14 +358,14 @@ https://www.visualmicro.com/
 
 | Date       | Version  | Notes        |
 |:---------- |:---------| :----------- |
-| 2026.11.xx | 0.0.0    | Preliminary  |
+| 2026.11.11 | 0.0.0    | Preliminary  |
 
 
 <br/>
 
 ## Joke of the Week 
 
-Did you sleep well?
+Did you sleep well? \
 _I don't know, I was asleep._
 
 © matt 2026
