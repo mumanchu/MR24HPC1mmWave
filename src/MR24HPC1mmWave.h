@@ -3,11 +3,11 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Arduino Library for MR24HPC1 Seeed Studio 24GHz mmWave Sensor
 // Human Static Presence Module Lite 
-// Copyright (C) https://muman.ch + https://github.com/mumanchu, 2026.11.11
+// Copyright (C) https://muman.ch + https://github.com/mumanchu, 2026.11.13
 // If you re-use this software, please include the above copyright notice
 // Released under the terms of the BSD 3-Clause License
 // 
-// For details see
+// For details see github
 // https://github.com/mumanchu/MR24HPC1mmWave
 
 
@@ -46,7 +46,6 @@ void mr24hpc1_logMsg(bool tx, const byte * msg, uint msglen)
 #define MR24HPC1_LOG(s)
 #endif
 
-// these may not be defined
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
@@ -68,7 +67,7 @@ protected:
 	uint rxLen;
 
 public:
-	// Set in begin(), normally 1
+	// Initialised in begin(), normally 1
 	uint protocolVersion;	// can be used if there are differences in the protocol
 
 	// Data from Standard Mode reports
@@ -87,11 +86,17 @@ public:
 	ulong lastReportTime;	// time of last report message, including 'heartbeat'
 
 	bool begin(Stream* stream);
-
 	bool getProductInformation(char* productModel, char* productId, 
 		char* hardwareModel, char* firmwareVersion, uint* protocolVersion);
 	bool resetModule();
 	bool getInitStatus(uint* initComplete);
+
+	// Messages
+	bool processReportMessage(bool* changed);
+	bool receiveNextMessage(const byte* cmd = NULL);
+
+	// The following methods are only needed for one-time configuration 
+	#ifdef MR24HPC1_ENABLE_CONFIG
 
 	// Standard Mode, also known as Scene Mode
 
@@ -155,23 +160,23 @@ public:
 	uint convertDistanceToCm(uint distance);
 	int convertMotionToCmPerSecond(uint motion);
 
-	// Messages
-	bool processReportMessage(bool* changed);
-	bool receiveNextMessage(const byte* cmd = NULL);
-
 #ifdef DEBUG
 	void printParameters();
 #endif
+	#endif		// #ifdef MR24HPC1_ENABLE_CONFIG
 
 protected:
 	bool sendMessageAndGetResponse(const byte* msg, uint msglen);
 	byte checksumMsg(const byte* msg, uint msglen);
+	bool read1Byte(const byte* msg, uint msglen, uint* value);
+
+	#ifdef MR24HPC1_ENABLE_CONFIG
 	bool write1Byte(byte* msg, uint msglen, uint value);
 	bool write2Bytes(byte* msg, uint msglen, uint value);
 	bool write4Bytes(byte* msg, uint msglen, ulong value);
-	bool read1Byte(const byte* msg, uint msglen, uint* value);
 	bool read2Bytes(const byte* msg, uint msglen, uint* value);
 	bool read4Bytes(const byte* msg, uint msglen, ulong* value);
+	#endif
 };
 
 
@@ -250,10 +255,11 @@ bool MR24HPC1mmWave::getProductInformation(char* productModel, char* productId,
 		msg[3] = (byte)cmd;
 		msg[7] = checksumMsg(msg, sizeof(msg));
 		if (!sendMessageAndGetResponse(msg, sizeof(msg)))
-			continue;
+			return false;
+
 		if (rxMsg[3] != cmd) {
 			MR24HPC1_LOGERROR("wrong response");
-			continue;
+			return false;
 		}
 		// last one is a binary value
 		if (cmd == 0xA5) {
@@ -272,15 +278,14 @@ bool MR24HPC1mmWave::getProductInformation(char* productModel, char* productId,
 }
 
 // Reset the module and wait until it's ready to continue
-// uses getInitStatus() to poll it
-// this normally takes just under 2 seconds
+// uses getInitStatus() for polling, it normally takes just under 2 seconds
+// I'm not sure what it does, it's not described in the User Manual
 bool MR24HPC1mmWave::resetModule()
 {
 	static const byte msg[] = { 0x53, 0x59, 0x01, 0x02, 0x00, 0x01, 0x0F, 0xBF, 0x54, 0x43 };
 	if (!sendMessageAndGetResponse(msg, sizeof(msg)))
 		return false;
 	delay(1000);
-
 	// wait for init complete, with 5 retries = 5 second timeout
 	for (uint retries = 0; retries < 5; ++retries) {
 		uint initComplete;
@@ -296,9 +301,15 @@ bool MR24HPC1mmWave::resetModule()
 // initComplete : 0 = busy; 1 = complete
 bool MR24HPC1mmWave::getInitStatus(uint* initComplete)
 {
-	const byte msg[] = { 0x53, 0x59, 0x05, 0x81, 0x00, 0x01, 0x0F, 0x42, 0x54, 0x43 };
+	static const byte msg[] = { 0x53, 0x59, 0x05, 0x81, 0x00, 0x01, 0x0F, 0x42, 0x54, 0x43 };
 	return read1Byte(msg, sizeof(msg), initComplete);
 }
+
+
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+// The following methods are only needed for one-time configuration
+
+#ifdef MR24HPC1_ENABLE_CONFIG
 
 // Select a scene/scanario preset
 // this selects the maximum detection distance for motion detection
@@ -385,7 +396,7 @@ motion :
 */
 bool MR24HPC1mmWave::getMotion(uint* motion)
 {
-	byte msg[] = { 0x53, 0x59, 0x80, 0x82, 0x00, 0x01, 0x0F, 0xBE, 0x54, 0x43 };
+	static const byte msg[] = { 0x53, 0x59, 0x80, 0x82, 0x00, 0x01, 0x0F, 0xBE, 0x54, 0x43 };
 	return read1Byte(msg, sizeof(msg), motion);
 }
 
@@ -491,7 +502,6 @@ motionSpeed :
 0x0A       = none
 0x0B..0x14 = moving away (-ve)
 see convertSpeedToCmPerSecond()
-NOTE: The seeedstudio library returns wrong values
 */
 bool MR24HPC1mmWave::getMotionSpeed(uint* motionSpeed)
 {
@@ -650,7 +660,7 @@ bool MR24HPC1mmWave::setMotionBoundary(uint boundary)
 }
 bool MR24HPC1mmWave::getMotionBoundary(uint* boundary)
 {
-	byte msg[] = {0x53, 0x59, 0x08, 0x8B, 0x00, 0x01, 0x0F, 0x4F, 0x54, 0x43};
+	static const byte msg[] = {0x53, 0x59, 0x08, 0x8B, 0x00, 0x01, 0x0F, 0x4F, 0x54, 0x43};
 	return read1Byte(msg, sizeof(msg), boundary);
 }
 
@@ -671,7 +681,7 @@ bool MR24HPC1mmWave::setMotionDuration(ulong milliseconds)
 }
 bool MR24HPC1mmWave::getMotionDuration(ulong* milliseconds)
 {
-	byte msg[] = { 0x53, 0x59, 0x08, 0x8C, 0x00, 0x01, 0x0F, 0x50, 0x54, 0x43 };
+	static const byte msg[] = { 0x53, 0x59, 0x08, 0x8C, 0x00, 0x01, 0x0F, 0x50, 0x54, 0x43 };
 	return read4Bytes(msg, sizeof(msg), milliseconds);
 }
 
@@ -690,7 +700,7 @@ bool MR24HPC1mmWave::setMotionToStaticDelay(ulong milliseconds)
 }
 bool MR24HPC1mmWave::getMotionToStaticDelay(ulong* milliseconds)
 {
-	byte msg[] = { 0x53, 0x59, 0x08, 0x8D, 0x00, 0x01, 0x0F, 0x51, 0x54, 0x43 };
+	static const byte msg[] = { 0x53, 0x59, 0x08, 0x8D, 0x00, 0x01, 0x0F, 0x51, 0x54, 0x43 };
 	return read4Bytes(msg, sizeof(msg), milliseconds);
 }
 
@@ -713,9 +723,12 @@ bool MR24HPC1mmWave::setCustomUnoccupiedDelay(ulong milliseconds)
 }
 bool MR24HPC1mmWave::getCustomUnoccupiedDelay(ulong* milliseconds)
 {
-	byte msg[] = { 0x53, 0x59, 0x08, 0x8E, 0x00, 0x01, 0x0F, 0x52, 0x54, 0x43 };
+	static const byte msg[] = { 0x53, 0x59, 0x08, 0x8E, 0x00, 0x01, 0x0F, 0x52, 0x54, 0x43 };
 	return read4Bytes(msg, sizeof(msg), milliseconds);
 }
+
+#endif	// #ifdef MR24HPC1_ENABLE_CONFIG
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
 // Parse a polled report message and update the associated public values, 
@@ -860,12 +873,13 @@ bool MR24HPC1mmWave::processReportMessage(bool* changed)
 // 'rxDataLen'
 bool MR24HPC1mmWave::sendMessageAndGetResponse(const byte* msg, uint msglen)
 {
+	MR24HPC1_LOGMSG(true, msg, msglen);
+
 	// clear receive buffer
 	while (stream->available())
 		stream->read();
 
 	// send message
-	MR24HPC1_LOGMSG(true, msg, msglen);
 	if (stream->write(msg, msglen) != msglen) {
 		MR24HPC1_LOGERROR("write failed");
 		return false;
@@ -1026,6 +1040,22 @@ byte MR24HPC1mmWave::checksumMsg(const byte* msg, uint msglen)
 	return (byte)cs;
 }
 
+// Send a message, get the response and extract a single 1-byte value
+bool MR24HPC1mmWave::read1Byte(const byte* msg, uint msglen, uint* value)
+{
+	MR24HPC1_ASSERT(msglen == 10);
+	if (!sendMessageAndGetResponse(msg, msglen))
+		return false;
+	if (rxDataLen != 1) {
+		MR24HPC1_LOGERROR("response not 1 byte");
+		return false;
+	}
+	*value = rxMsg[6];
+	return true;
+}
+
+
+#ifdef MR24HPC1_ENABLE_CONFIG
 
 // Put a single 1, 2, or 4-byte value into a message, update the checksum, 
 // send the message and get the response
@@ -1036,7 +1066,6 @@ bool MR24HPC1mmWave::write1Byte(byte* msg, uint msglen, uint value)
 	msg[7] = checksumMsg(msg, msglen);
 	return sendMessageAndGetResponse(msg, msglen);
 }
-
 bool MR24HPC1mmWave::write2Bytes(byte* msg, uint msglen, uint value)
 {
 	MR24HPC1_ASSERT(msglen == 11);
@@ -1049,7 +1078,6 @@ bool MR24HPC1mmWave::write2Bytes(byte* msg, uint msglen, uint value)
 	msg[8] = checksumMsg(msg, msglen);
 	return sendMessageAndGetResponse(msg, msglen);
 }
-
 bool MR24HPC1mmWave::write4Bytes(byte* msg, uint msglen, ulong value)
 {
 	MR24HPC1_ASSERT(msglen == 13);
@@ -1067,21 +1095,12 @@ bool MR24HPC1mmWave::write4Bytes(byte* msg, uint msglen, ulong value)
 	return sendMessageAndGetResponse(msg, msglen);
 }
 
-// Send a message, get the response and extract a single 1, 2 or 4-byte value
-bool MR24HPC1mmWave::read1Byte(const byte* msg, uint msglen, uint* value)
-{
-	MR24HPC1_ASSERT(msglen == 10);
-	if (!sendMessageAndGetResponse(msg, msglen))
-		return false;
-	*value = rxMsg[6];
-	return true;
-}
-
+// Send a message, get the response and extract a single 2 or 4-byte value
 bool MR24HPC1mmWave::read2Bytes(const byte* msg, uint msglen, uint* value)
 {
 	if (!sendMessageAndGetResponse(msg, msglen))
 		return false;
-	if (rxMsgLen != 11 || rxMsg[5] != 2) {
+	if (rxDataLen != 2) {
 		MR24HPC1_LOGERROR("response not 2 bytes");
 		return false;
 	}
@@ -1089,21 +1108,20 @@ bool MR24HPC1mmWave::read2Bytes(const byte* msg, uint msglen, uint* value)
 	*value = (uint)(rxMsg[6] << 8) + rxMsg[7];
 	return true;
 }
-
 bool MR24HPC1mmWave::read4Bytes(const byte* msg, uint msglen, ulong* value)
 {
 	if (!sendMessageAndGetResponse(msg, msglen))
 		return false;
-	if (rxMsgLen != 13 || rxMsg[5] != 4) {
-		MR24HPC1_LOGERROR("response not 32 bit");
+	if (rxDataLen != 4) {
+		MR24HPC1_LOGERROR("response not 4 bytes");
 		return false;
 	}
+	// MS byte first
 	*value = (rxMsg[6] << 24) + (rxMsg[7] << 16) + (rxMsg[8] << 8) + rxMsg[9];
 	return true;
 }
 
-
-// Conversion Functions
+// Conversion methods
 
 uint MR24HPC1mmWave::convertUnoccupiedDelayToSeconds(uint unoccupiedDelay)
 {
@@ -1131,7 +1149,7 @@ uint MR24HPC1mmWave::convertSensitivityToCm(uint sensitivity)
 ...
 10 = 5m   (500cm);
 */
-uint MR24HPC1mmWave::convertDistanceToCm(uint distance)
+inline uint MR24HPC1mmWave::convertDistanceToCm(uint distance)
 {
 	return distance * 50;
 }
@@ -1158,12 +1176,14 @@ int MR24HPC1mmWave::convertMotionToCmPerSecond(uint motion)
 }
 
 
+// This method is only available in DEBUG mode
 #ifdef DEBUG
 
 // Print the entire configuration
 // parameters for Standard Mode, Open Function Mode and Custom Mode are printed
 void MR24HPC1mmWave::printParameters()
 {
+	MR24HPC1_SERIAL.println();
 	MR24HPC1_SERIAL.println("MR24HPC1 PARAMETERS");
 
 	bool ofm;
@@ -1229,9 +1249,13 @@ void MR24HPC1mmWave::printParameters()
 
 	uint sensitivity;
 	if (getSensitivity(&sensitivity)) {
-		sprintf(txt, "Sensitivity = %u : %ucm",
-			sensitivity,
-			convertSensitivityToCm(sensitivity));
+		if (sensitivity == 0)
+			strcpy(txt, "Sensitivity = 0 : <not set>");
+		else {
+			sprintf(txt, "Sensitivity = %u : %ucm",
+				sensitivity,
+				convertSensitivityToCm(sensitivity));
+		}
 		MR24HPC1_SERIAL.println(txt);
 	}
 	else {
@@ -1362,5 +1386,6 @@ void MR24HPC1mmWave::printParameters()
 	MR24HPC1_SERIAL.flush();
 }
 
-#endif
+#endif		// #ifdef DEBUG
 
+#endif		// #ifdef MR24HPC1_ENABLE_CONFIG
