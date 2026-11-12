@@ -24,7 +24,7 @@ Strangely, the ProductModel reported by the Seeed Studio MR24HPC is "R24DVD1", w
 ## Contents
 
 - [Summary from the User Manual](#summary)
-- [Detecting the Occupied/Unoccupied State](#occupied-state)
+- [How the Occupied/Unoccupied State is Detected](#occupied-state)
 - [Connecting the Module to the Microcontroller](#connecting-the-module)
 - [Configuring the Sensor](#configuration)
 - [Windows Application](#windows-application)
@@ -65,19 +65,19 @@ During normal operation, the sensor sends unsolicited _Report_ messages on its T
 <!-- ========================================================================================== -->
 
 <a name="occupied-state"></a>
-## Detecting the Occupied/Unoccupied State
+## How the Occupied/Unoccupied State is Detected
 
-The module does many mysterious things, but in the end it all boils down to the 'Occupied' and 'Unoccupied' states. This is how the documentation describes it.
+The module does many mysterious things, but in the end it boils down to just 'Occupied' and 'Unoccupied' states. This is how the documentation describes it.
 
 The state is 'Occupied' when _motion_ (a moving person) or _static presence_ (a stationary person) is detected. Could 'person' be an animal or any moving object? This is not clear.
 
-1) To detect motion, the following conditions must be satisfied:
+1. To detect motion, the following conditions must be satisfied:
 
 - The 'Motion Energy' reading must be greater than the 'Motion Energy Threshold' setting.
 - The 'Motion Distance' reading must be within the 'Motion Boundary' setting.
 - If these two conditions are not met, the 'moving' state will lapse after the 'Motion To Static Delay' period and it will switch to 'static presence' detection.
 
-2) To detect static presence, these conditions must be satisfied:
+2. To detect static presence, these conditions must be satisfied:
 
 - The 'Static Energy' reading must be greater than the 'Static Energy Threshold' value.
 - The 'Static Distance' must be within the 'Static Boundary' setting.
@@ -85,29 +85,29 @@ The state is 'Occupied' when _motion_ (a moving person) or _static presence_ (a 
 
 When 'Unoccupied', if motion or static presence is again detected, it goes to step 1 or 2.
 
-_But I must say that it does not behave in exactly this way when I observe the states in the MR24HPC1.exe App's graphical view..._
+_But I must say that it does not behave in exactly this way when I observe the states in the MR24HPC1.exe App's graphical view._
 
 
 <!-- ========================================================================================== -->
 
 <a name="connecting-the-module"></a>
-## Connecting the Module to the Microcontroller
+## Connecting the MR24HPC1 Module to the Microcontroller (MCU)
 
 > [!CAUTION]
-> This module runs at 5V! DO NOT connect it directly to 3.3V a microcontroller unless the microcontroller has 5V-tolerant GPIOs! Also note that NOT ALL GPIOs are 5V-tolerant, so check the data sheet very carefully. \
-> For a 3.3V MCU, you could put a 10K ohm current-limiting resistor between the sensor's TX output and the MCU's RX input, and also for the S1 and S2 signals if you use them. (See Disclaimer.)
+> This module runs at 5V! DO NOT connect it directly to 3.3V a microcontroller, EVEN IF the microcontroller has 5V-tolerant GPIOs! If the MCU is powered off, but the sensor is still providing 5V to the input (because it has its own power supply), it can still damage the MCU! Also note that NOT ALL GPIOs are 5V-tolerant, so check the data sheet very carefully. \
+> For a 3.3V MCU, you should put a 10..20K ohm current-limiting resistor (depending on the input impedance, which forms a voltage divider) between the sensor's TX output and the MCU's RX input, and also for the S1 and S2 signals if you use them. The MCU's input protection diode will limit the voltage, but it should not pass more than about 0.2mA.
 
 A serial port which can run at 115200 baud is needed. The example sketch uses `Serial1` for the sensor, with `Serial` being used for the debug output to the Serial Monitor.
 
-Because this library uses a `Stream` pointer, it can use either `HardwareSerial` or `SoftwareSerial`. 
+Because this library references a `Stream` pointer, it can use either `HardwareSerial` or `SoftwareSerial`. 
 
-A `HardwareSerial` port has fixed pins, which will probably be different for each microcontroller board. The standard pins are RX=Pin 0 and TX=Pin 1. Unfortunately this is usually the default `Serial` port which is used for the Serial Monitor, so these pins cannot be used for the mmWave sensor unless you use a different port for the Serial Monitor. The example sketch shows how to select the sensor's serial port for different MCUs. HardwareSerial *must* be used for slow microcontrllers with clocks less than 120MHz.
+A `HardwareSerial` port has fixed pins, which may be different for each microcontroller board. The standard pins are RX=Pin 0 and TX=Pin 1. Unfortunately this is usually the default `Serial` port which is used for the Serial Monitor, so these pins cannot be used for the mmWave sensor unless you use a different port for the Serial Monitor. The example sketch shows how to select the sensor's serial port for different MCUs. HardwareSerial must be used on slow microcontrollers with clocks less than 120MHz.
 
-With `SoftwareSerial`, you can use almost any two GPIO pins for RX/TX. But SoftwareSerial _will not run_ at the required 115200 baud on many controllers. To use SoftwareSerial reliably at 115200 baud, and have time to do other things, you will need a _very fast_ 32-bit controller clocked at over 120MHz. On an STM32F103RB (72MHz) and it did not work, the max speed was 86400. On an STM32F407ZGT6 (168MHz), SoftwareSerial ran perfectly at 115200 baud.
+With `SoftwareSerial`, you can use almost any two GPIO pins for RX and TX. But SoftwareSerial _will not run_ at the required 115200 baud on many controllers. To use SoftwareSerial reliably at 115200 baud, and have processing time to do other things, you will need a _fast_ 32-bit controller, clocked at over 120MHz. It did not work on an STM32F103RB (72MHz), the max speed it achieved was 86400. On an STM32F407ZGT6 (168MHz), SoftwareSerial ran perfectly at 115200 baud.
 
 **2mm Pin Spacing :-(**
 
-The board's male 2 x 8 pin header for the UART connection has 2mm spacing. This is VERY annoying because the standard spacing is 2.54mm. Not many people have 2mm female connectors, so you'll probably have to buy some. It's not a good idea to force 2.54mm Dupont jumpers onto these smaller pins because they will be bent, and the connections are not reliable due to the smaller pin width (as I found out).
+The board's male pin headers orr the UART and SWD connections have 2mm spacing. This is VERY annoying because the standard spacing is 2.54mm. Not many people have 2mm female connectors, so you'll probably have to buy some. It is not a good idea to force 2.54mm Dupont jumpers onto these smaller pins because they will be bent, and the connections are not reliable due to the smaller pin width, as I found out. (_Note for Seeed Studio: The cables and connectors should be supplied with the module. And always use standard 2.54mm connectors in future products._)
 
 
 <!-- TODO diagram and photo -->
@@ -118,18 +118,21 @@ The board's male 2 x 8 pin header for the UART connection has 2mm spacing. This 
 <a name="configuration"></a>
 ## Configuring the Sensor
 
-By default, the library does not enable the configuration methods. Add `#define MR24HPC1_ENABLE_CONFIGURATION` before `#include "MR24HPC1mmWave.h"` to enable the configuration methods, as shown in the example sketch.
+By default, the library does not enable the configuration methods. Add `#define MR24HPC1_ENABLE_CONFIG` before `#include "MR24HPC1mmWave.h"` to enable the configuration methods, as shown in the example sketch.
 
-At startup, the example sketch displays the current sensor configuration with `printParameters()`. Run this once to see what configuration you have. (Tip: You can put `return;` at the start of `loop()` so the display does not scroll up with multiple report messages.)
+At startup, the example sketch displays the current sensor configuration with `printParameters()`. Run this once to see your board's configuration. (Tip: You can put `return;` at the start of `loop()` so the display does not scroll up with multiple report messages, giving you time to view the configuration.)
 
-Configuration parameters are stored in nonvolatile memory on the sensor board. Once programmed they remain unchanged until they are re-programmed.
+Configuration parameters are stored in nonvolatile memory on the sensor board. Once programmed, they remain unchanged until they are re-programmed.
 
-This means that you DO NOT need to re-program them in `setup()` every time the sketch runs. In fact, you should not do this, just program them once, then you don't need the configuration methods any more.
+This means that you DO NOT need to re-program them in `setup()` every time the sketch runs. Just program them once, then you don't need the configuration methods any more and you can patch out `#define MR24HPC1_ENABLE_CONFIG`.
 
-Parameters can either be programmed with a 'one-time programming sketch' which calls the `setXXX()` methods. Or they can be programmed using the Windows `MR24HPC1.exe` application described in the next section. You could do this with the Seeed Studio app described in the wiki, but (allegedly) it's a bit weird, and the "smoothed" analog-style graphical views make it hard to see what's happening. The _mumanchu_ app lets you see the correlation between the digital signals and sensor events.
+Parameters can either be programmed with a 'one-time programming sketch' which calls the `setXXX()` methods. Or they can be programmed using the Windows `MR24HPC1.exe` application described in the next section. You cand also do this with the Seeed Studio app described in their wiki, but (allegedly) it's a bit weird, and the smoothed analog-style graphical views make it hard to see what's happening. The _mumanchu_ app lets you see the correlation between the digital signals and the sensor events.
 
 The configuration parameters are described here in the _mumanchu_ MR24HPC1.exe configurator User Manual, \
 https://muman.ch/muman/index.htm?muman-mr24hpc1-mmwave-sensor.htm#muman-mr24hpc1-parameters
+
+<!-- TODO config parameters here? -->
+
 
 
 <!-- ========================================================================================== -->
@@ -137,43 +140,32 @@ https://muman.ch/muman/index.htm?muman-mr24hpc1-mmwave-sensor.htm#muman-mr24hpc1
 <a name="windows-application"></a>
 ## Windows Application, MR24HPC1.exe
 
-A Windows application called `MR24HPC1.exe` has been developed to help with configuration, testing and visualisation. This application will help you understand the configuration parameters and sensor readings.
+A Windows application called `MR24HPC1.exe` has been developed for configuration, testing and visualisation. This application will help you understand the configuration parameters and sensor readings.
 
-<img height="300" alt="MR24HPC1.exe" src="images/mr24hpc1-app.jpg" />
+<!-- <img height="300" alt="MR24HPC1.exe" src="images/mr24hpc1-app.jpg" /> -->
+<img height="300" alt="MR24HPC1.exe" src="https://muman.ch/muman/mr24hpc1-app-1.png" />
 
-
-TODO
-
-The full User Manual for the `MR24HPC1.exe` application is here, \
-https://muman.ch/muman/index.htm?muman-mr24hpc1-mmwave-sensor.htm#muman-mr24hpc1-user-manual
-
-The C# source code for this application (requires Visual Studio 2026 Community Edition) will soon be on github, but until then you can download the executable from here, \
-https://muman.ch/muman/MR24HPC1.exe \
-
-> [!INFORMATION]
-> Windows will have the usual 'Windows Protected Your PC' fit if you try to download and run MR24HPC1.exe. It's very safe though, it does not use any internet connections or even write to the hard drive. So just press 'Run Anyway'.
+> [!NOTE]
+> Windows will have the usual 'Windows Protected Your PC' fit if you try to download and run MR24HPC1.exe, because it is not digitally signed (but neither are many of the Chinese apps). It's very safe though, it does not use any internet connections or even write to the hard drive. So just press 'Run Anyway'.
 
 
 An Arduino or other controller is _not needed_ to use the Windows application. The PC connects directly to the mmWave sensor using a _USB-to-5V-Serial Convertor_.
 
-
-???
-To use the _mumanchu_ MR24HPC1.exe or Seeed Studio configurators, you will need to convert the PC's USB communications to 5V TTL Serial.
-
-The best converter to use is an FTDI TTL-232R-5V, but there are many suitable converters available. Make sure it's the 5V version, because a 3.3V version will not work and may be damaged.
+The best converter to use is an _FTDI TTL-232R-5V_, but there are many suitable converters available. Make sure it's the 5V version, because a 3.3V version will not work and may be damaged.
 
 **Using an Arduino Uno as a USB-to-serial converter**
 
-The FTDI converter is quite expensive. But and old Arduino Uno can be used instead. These contain the same FTDI FT232 chip, or an equivalent, which does the same thing. To disable the Arduino microcontroller, connect the RESET pin to GND. This prevents the microcontroller from starting up, allowing the FT232 chip to be used for USB-to-TTL RX/TX communications. 
+The FTDI converter is quite expensive. But an old Arduino Uno can be used instead. These contain the same FTDI FT232 chip, or an equivalent, which does the same thing. To disable the Arduino microcontroller, connect its RESET pin to GND. This prevents the microcontroller from starting up, allowing the FT232 chip to be used for USB-to-TTL RX/TX communications. 
 
-Connect the Arduino's 5V and GND to power the sensor, the RX (pin 0) to the sensors's TX, and TX (pin 1) to the sensor's RX.
+Connect the Arduino's 5V and GND to power the sensor, the RX (Pin 0) to the sensors's TX, and TX (Pin 1) to the sensor's RX.
 
-Now run the _mumanchu_ MR24HPC1.exe or Seeed Studio configurator, select the COM port and press the "Connect" button.
+Now run the _mumanchu_ MR24HPC1.exe, select the USB converter's COM port and press the "Connect" button.
 
+The User Manual for the `MR24HPC1.exe` application is here, \
+https://muman.ch/muman/index.htm?muman-mr24hpc1-mmwave-sensor.htm#muman-mr24hpc1-user-manual
 
-
-TODO
-
+The C# source code for this application (requires Visual Studio 2026 Community Edition) will soon be on github, but until then you can download the executable from here, \
+https://muman.ch/muman/MR24HPC1.exe \
 
 
 <!-- ========================================================================================== -->
@@ -298,31 +290,94 @@ public:
 
 [MR24HPC1mmWave-Example.ino](examples/MR24HPC1mmWave-Example/MR24HPC1mmWave-Example.ino)
 
-`#define DEBUG`
+The example sketch outputs messages to the `Serial` port at 115200 baud. Use a Serial Monitor to display the output. I'm still using the ancient `PuTTy`, but the Arduino Serial Monitor is fine.
 
+The shows the messages in hex (`>>>` = sent, `<<<` = received), and also the meaning of each message.
 
-
-`#define MR24HPC1_ENABLE_CONFIG`
-
-
-displays the configuration at startup
-
-underlying thingy mode
-
-
-loop()
-polls for report messages
-detects if the sensor is not responding, no messages received for > 1 minute , uses 'heartbeat' message
-
-
-
-
-**Hiding the hex messages**
-
-message dipslay in hex, can be disablde by
-
+You can disable the hex messages by commenting out `#define DEBUG` in the example sketch, or by commenting out the `mr24hpc1_logMsg()` statement in the macro, \
 <img alt="disable-hex-log.png" src="images/disable-hex-log.png" />
 
+If both `DEBUG` and `MR24HPC1_ENABLE_CONFIG` are defined, the sketch displays the current configuration under `MR24HPC1 PARAMETERS`.
+
+In `loop()`, it then polls the mmWave sensor for report messages and displays the state as they are received. It also checks for no response from the sensor for over 1 minute, which means it has gone off line.
+
+This is what you should see on the Serial Monitor... 
+
+```
+MR24HPC1mmWave Started...
+
+>>> 53 59 02 A5 00 01 0F 63 54 43
+<<< 53 59 02 A5 00 01 01 55 54 43
+>>> 53 59 01 02 00 01 0F BF 54 43
+<<< 53 59 01 02 00 01 0F BF 54 43
+>>> 53 59 05 81 00 01 0F 42 54 43
+<<< 53 59 05 81 00 01 01 34 54 43
+
+MR24HPC1 PARAMETERS
+>>> 53 59 08 80 00 01 0F 44 54 43
+<<< 53 59 08 80 00 01 00 35 54 43
+>>> 53 59 02 A1 00 01 0F 5F 54 43
+<<< 53 59 02 A1 00 07 52 32 34 44 56 44 31 1D 54 43
+>>> 53 59 02 A2 00 01 0F 60 54 43
+<<< 53 59 02 A2 00 07 30 2E 31 2E 35 00 00 49 54 43
+>>> 53 59 02 A3 00 01 0F 61 54 43
+<<< 53 59 02 A3 00 04 52 32 34 44 51 54 43
+>>> 53 59 02 A4 00 01 0F 62 54 43
+<<< 53 59 02 A4 00 0F 47 32 34 56 44 31 53 59 56 30 30 31 30 30 36 02 54 43
+>>> 53 59 02 A5 00 01 0F 63 54 43
+<<< 53 59 02 A5 00 01 01 55 54 43
+ProductModel = R24DVD1
+ProductId = 0.1.5
+HardwareModel = R24D
+FirmwareVersion = G24VD1SYV001006
+ProtocolVersion = 1
+>>> 53 59 05 87 00 01 0F 48 54 43
+<<< 53 59 05 87 00 01 01 3A 54 43
+Scene = 1 : Living Room, range 4..4.5m
+>>> 53 59 05 88 00 01 0F 49 54 43
+<<< 53 59 05 88 00 01 01 3B 54 43
+Sensitivity = 1 : 250cm
+>>> 53 59 80 8A 00 01 0F C6 54 43
+<<< 53 59 80 8A 00 01 01 B8 54 43
+UnoccupiedDelay = 1 : 10 seconds
+>>> 53 59 08 80 00 01 0F 44 54 43
+<<< 53 59 08 80 00 01 00 35 54 43
+OpenFunctionMode = 0 : Off
+>>> 53 59 05 89 00 01 0F 4A 54 43
+<<< 53 59 05 89 00 01 00 3B 54 43
+CustomMode = 0 : <not set>
+>>> 53 59 08 88 00 01 0F 4C 54 43
+<<< 53 59 08 88 00 01 21 5E 54 43
+StaticEnergyThreshold = 33
+>>> 53 59 08 8A 00 01 0F 4E 54 43
+<<< 53 59 08 8A 00 01 06 45 54 43
+StaticBoundary = 6 : 300cm
+>>> 53 59 08 89 00 01 0F 4D 54 43
+<<< 53 59 08 89 00 01 04 42 54 43
+MotionEnergyThreshold = 4
+>>> 53 59 08 8B 00 01 0F 4F 54 43
+<<< 53 59 08 8B 00 01 0A 4A 54 43
+MotionBoundary = 10 : 500cm
+>>> 53 59 08 8C 00 01 0F 50 54 43
+<<< 53 59 08 8C 00 04 00 00 00 96 DA 54 43
+MotionDuration = 150ms
+>>> 53 59 08 8D 00 01 0F 51 54 43
+<<< 53 59 08 8D 00 04 00 00 0B B8 08 54 43
+MotionToStaticDelay = 3000ms
+>>> 53 59 08 8E 00 01 0F 52 54 43
+<<< 53 59 08 8E 00 04 00 00 27 10 7D 54 43
+CustomUnoccupiedDelay = 10000ms
+
+<<< 53 59 80 01 00 01 01 2F 54 43
+<0x80 standard mode report>
+Occupied
+<<< 53 59 80 02 00 01 02 31 54 43
+<0x80 standard mode report>
+Occupied
+Moving
+...
+
+```
 
 
 <!-- ========================================================================================== -->
@@ -330,19 +385,19 @@ message dipslay in hex, can be disablde by
 <a name="advantages"></a>
 ## Why Use This Library?
 
-There are only a couple of other minimalist MR24HPC1 libraries out there, but this library has several advantages...
+There are only a couple of other MR24HPC1 libraries out there, but this library has several advantages...
 
-- It contains methods to configure _all_ the sensor's parameters, but only if you `#define MR24HPC1_ENABLE_CONFIG`.
+- It contains methods to configure all the sensor's parameters, but only if you `#define MR24HPC1_ENABLE_CONFIG`. Normally you only do this once, then you can patch out all the configuration methods.
 
-- Optionally displays all sent and received messages in Hex. This is very useful for testing and understanding the binary protocol.
+- Optionally displays all messages sent and received, in hex. This is very useful for testing and understanding the binary protocol.
 
 - Has debug code to display the entire current configuration, see `printParameters()`.
 
 - Uses a state machine to receive and validate messages from the sensor. This is important because the sensor sends unsolicited report messages, which can be confused with the response to a command. 
 
-- Because this library uses a `Stream` pointer, it can use either `HardwareSerial` (`Uart`) or `SoftwareSerial`. With SoftwareSerial you can use almost any two GPIO pins to connect to the sensor, but you need a very fast microcontroller (120MHz or faster) to achieve 115200 baud.
+- Because this library uses a `Stream` pointer, it can use either `HardwareSerial` (`Uart`) or `SoftwareSerial`. SoftwareSerial can use almost any two GPIO pins to connect to the sensor, but it requires a very fast microcontroller (120MHz or faster) to achieve 'bit-banged' 115200 baud.
 
-- There is a _mumanchu_ [Windows Application](#windows-application) called `MR24HPC1.exe` to help with the configuration, testing and visualisation.
+- There is a _mumanchu_ Windows application called `MR24HPC1.exe` to help with the configuration, testing and visualisation.
 
 - The library source code in `MR24HPC1mmWave.h` contains useful comments describing what each method does, and why.
 
