@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Example for mumanchu's Seeed Studio 24GHz mmWave Sensor MR24HPC1 Library
 // Developed using Visual Studio 2026 with the Visual Micro Extension
-// Copyright (C) https://muman.ch + https://github.com/mumanchu, 2026.11.11
+// Copyright (C) https://muman.ch + https://github.com/mumanchu, 2026.11.13
 // If you re-use this software please include the above copyright notice
 //
 // For details see
@@ -13,6 +13,9 @@
 // Comment this out to hide the debug output
 #define DEBUG
 
+// Comment this out to disable the configuration methods (smaller code)
+// see https://github.com/mumanchu/MR24HPC1mmWave/tree/main#configuration
+#define MR24HPC1_ENABLE_CONFIG
 
 #include "MR24HPC1mmWave.h"
 MR24HPC1mmWave sensor;
@@ -25,13 +28,13 @@ MR24HPC1mmWave sensor;
 
 #if defined(ARDUINO_SAM_DUE)
 // The Arduino Due has Serial1 on TX1 (18) and RX1 (19), connect these to RX 
-// and TX on the sensor
+// and TX of the sensor
 // !!!NOTE!!!  
 // If you select "No Optimisation" for the Arduino Due, then the build may
 // fail with this message:
 //  "HardwareSerial.h:26: undefined reference to vtable for HardwareSerial"
-// It's a problem with the boards package code. Set it to "Default Optimisation",
-// or use the fix described here:
+// It's a problem with the board package code. Set it to "Default Optimisation",
+// do a 'Clean solution' and re-build. Or use the fix described here:
 // https://learn.adafruit.com/proper-step-debugging-atsamd21-arduino-zero-m0/paths-and-optimizations#fixing-some-core-files-2469468-17
 #endif
 
@@ -62,7 +65,7 @@ Uart Serial1(USART1);
 // Get ready...
 void setup() 
 {
-	// I use different pins for Serial logging on the STM32 Nucleo-64 boards,
+	// Use different pins for Serial logging on the STM32 Nucleo-64 boards,
 	// else Serial is the USB port which is also used for download
 	#ifdef ARDUINO_NUCLEO_64
 	Serial.setTx(PC_10);
@@ -88,29 +91,38 @@ void setup()
 	Serial1.setPins(6 /*rxPin*/, 7 /*txPin*/);
 	#endif
 
+	// Initialise and reset the mmWave sensor
 	if (!sensor.begin(&Serial1)) {
 		Serial.println("sensor.begin() failed");
 		Serial.flush();
 		while (1) yield();
 	}
-
-	if (!sensor.setOpenFunctionMode(0)) {
-		Serial.println("sensor.setOpenFunctionMode() failed");
-		Serial.flush();
-		while (1) yield();
-	}
 	sensor.resetModule();
 
-	Serial.println();
+
+	#ifdef MR24HPC1_ENABLE_CONFIG
+
+	//TODO 
+	// Add code here to do one-time sensor configuration, 
+	// or use the MR24HPC1.exe Windows application
+	// See https://github.com/mumanchu/MR24HPC1mmWave/tree/main#configuration
+	// Configuration parameters are stored in nonvolatile memory, 
+	// so you only need to configure them once
+
+	// Display the current configuration
+	// this is only available if DEBUG is defined
 	#ifdef DEBUG
 	sensor.printParameters();
 	#endif
+
+	#endif	// #ifdef MR24HPC1_ENABLE_CONFIG
 }
 
 
 // Go!
 void loop() 
 {
+	// poll the mmWave sensor for messages
 	if (sensor.receiveNextMessage()) {
 		bool changed;
 		if (sensor.processReportMessage(&changed) && changed) {
@@ -126,15 +138,15 @@ void loop()
 	// the 'heartbeat' message is sent every minute when there are no reports
 	static bool notResponding = false;
 	if ((millis() - sensor.lastReportTime) > 65000) {
-		// sensor off line
+		// no messages for 65 seconds, sensor is off line
 		if (!notResponding) {
 			notResponding = true;
 			Serial.println("*** Sensor not responding ***");
 			Serial.flush();
 		}
 	}
-	else {
-		// sensor back on line
+	else if (notResponding) {
+		// sensor is back on line
 		notResponding = false;
 	}
 }
