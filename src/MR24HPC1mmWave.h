@@ -15,6 +15,9 @@
 #include <string.h>
 #include <stdio.h>
 
+typedef unsigned int uint;
+typedef unsigned long ulong;
+
 
 // For debug output
 #ifdef DEBUG
@@ -45,9 +48,6 @@ void mr24hpc1_logMsg(bool tx, const byte * msg, uint msglen)
 #define MR24HPC1_LOGMSG(tx, msg, msglen)
 #define MR24HPC1_LOG(s)
 #endif
-
-typedef unsigned int uint;
-typedef unsigned long ulong;
 
 
 class MR24HPC1mmWave
@@ -1218,7 +1218,7 @@ void MR24HPC1mmWave::printParameters()
 
 	SCENE scene;
 	if (getScene(&scene)) {
-		char* s;
+		const char* s;
 		switch (scene) {
 		case 0:
 			s = "None";
