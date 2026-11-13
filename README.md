@@ -1,18 +1,24 @@
 # Arduino Library for Seeed Studio MR24HPC1 25GHz mmWave Sensor
 
-The "MR24HPC1 24GHz mmWave Sensor Human Static Presence Module Lite" from Seeed Studio has a detection range of up to 5m. 
+The "MR24HPC1 24GHz mmWave Sensor Human Static Presence Module Lite" from Seeed Studio has a 5m range.  
 
-It runs only on 5V, 3.3V cannot be used. Communications uses a proprietary binary serial protocol at a fixed speed of 115200 baud. 
+Serial communications uses a proprietary binary protocol at a fixed speed of 115200 baud with the usual TX and RX pins. 
 
 <img height="300" alt="mr24hpc1 boards" src="images/mr24hpc1-boards.jpg" />
 
-The board uses the ICLEGEND S3KM111L mmWave radar chip. It also contains a MicRadar T15BT, a 32-bit microcontroller which provides the communications. "_The MicRadar T15BT is an integrated 24GHz mmWave radar sensor and Bluetooth/Wi-Fi combo module that uses the ICLEGEND Micro S3KM111L radar System-on-Chip (SoC)._" So BT = Bluetooth.
+The board contains an ICLEGEND S3KM111L mmWave radar chip. It also has a MicRadar T15BT, a 32-bit microcontroller to handle the communications. "_The MicRadar T15BT is an integrated 24GHz mmWave radar sensor and Bluetooth/Wi-Fi combo module that uses the ICLEGEND Micro S3KM111L radar System-on-Chip (SoC)._" So BT = Bluetooth.
 
-The T15BT is not wired for Bluetooth, there's no antenna. (Seeed Studio does have a "Sensor Kit" that uses Bluetooth and WiFi, but this has a XIAO microcontroller to manage the Bluetooth and WiFi communications.)
+It's a shame that the T15BT is not wired for Bluetooth, there's no antenna. (But Seeed Studio does have a "Sensor Kit" with Bluetooth and WiFi. This has an additional XIAO microcontroller to manage the Bluetooth and WiFi communications.)
 
-There is a very similar mmWave board from MicRadar, called the R24DVD1 (the right-hand picture above). This uses a slightly different communications protocol. I'll probably do a library for the MicRadar version because there don't seem to be any libraries for this board yet.
+There is a very similar mmWave board from MicRadar, called the R24DVD1 (see the right-hand picture above). This uses a slightly different communications protocol. I'll probably do a MicRadar version of this library, because there don't seem to be any libraries for the MicRadar board.
 
 Strangely, the ProductModel reported by the Seeed Studio MR24HPC is "R24DVD1", which is the name of MicRadar product.
+
+> [!IMPORTANT]
+> The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. Most of the examples on internet are wrong, you do _not_ need level shifters.
+
+> [!CAUTION]
+> The board needs 5V at 200mA. If powering the microcontroller from USB, the 5V is taken directly from the USB's 5V, so 5V at 200mA is not a problem. If not using USB power, you may need a separate 5V power supply connected to VIN (min. 5V 1A). Powering via the barrel connector uses the onboard 5V regulator, which might not be able to supply an additional 200mA. 
 
 > [!NOTE]
 > There's another _mumanchu_ library for the cheaper C4001 mmWave sensors (12m and 25m range) from DFRobot, \
@@ -30,8 +36,8 @@ Strangely, the ProductModel reported by the Seeed Studio MR24HPC is "R24DVD1", w
 - [Windows Application](#windows-application)
 - [Class Reference](#class-reference)
 - [Example Sketch](#example-sketch)
+- [Updating the MR24HPC1 Firmware](#firmware-update)
 - [Why Use This Library?](#advantages)
-- [Updating the Firmware](#firmware-update)
 - [References](#references)
 - [Revision History](#revision-history)
 
@@ -51,15 +57,15 @@ Metal objects are not transparent to the radar signals and are highly reflective
 
 The radar signal is a cone, which means that it behaves best when mounted on the ceiling, with sensitivity varying from the edge to the centre of the cone. This reflected signal is a "radius" rather than a straight-line distance, and I suspect all the distances are actually radiuses too (or 'radii'). It can be mounted under a chair or a bed because the radar signal passes through the cushions or mattress. Mounting on a wall is possible too, where it will be able to detect humans moving about on the ceiling, but if you don't need that feature then half of the radar's field-of-vision will not be usable.
 
-The power supply quality is very important, they even supply a couple of circuit diagrams. Minimum 100mA ripple is required, with a good GND connection. I used 5V from the USB, or 5V from the microcontroller board, and did not have any problems - but the wire length was very short. If the sensor is a long way from the microcontroller, you will probably need a local 5V power supply.
+The power supply quality is very important. Minimum 100mA ripple is required, with a good GND connection. I used 5V from the USB, or 5V from the microcontroller board, and did not have any problems - but the wire length was very short. If the sensor is a long way from the microcontroller, you will probably need a separate local 5V power supply.
 
-The module has two digital (5V/0V on/off) outputs. Output S1 is high (5V) if "Occupied" when a person or persons are detected. Output S2 is high (5V) when motion is detected. There are also 4 general-purpose outputs GP1..GP4, but these are undocumented - it would have been nice if these were available.
+The module has two digital (3.3V/0V on/off) outputs. Output S1 is high (3.3V) if "Occupied" when a person or persons are detected. Output S2 is high (3.3V) when motion is detected. There are also 4 general-purpose outputs GP1..GP4, but these are undocumented - it would have been nice if these were available.
 
 The board has two configuration modes. _Standard Function Mode_ uses a _Scene Preset_ to select ranges and energy levels for four standard environments (rooms), along with a _Sensitivity_ distance and an _Unoccupied Delay_ (10s..60mins). _Advanced Mode_, confusingly called _Underlying Open Function Mode_ in the manual, allows a much more detailed configuration, with programmable energy thresholds, distance ranges and timing. 
 
 Once configured, the module can be used stand-alone if the S1 (Occupied/Unoccupied) and S2 (Motion/No Motion) outputs are sufficient. Alternatively, the serial connection or USB can be used to supply real-time data, or it can be connected to a microcontroller to provide Bluetooth or WiFi communications with a server.
 
-During normal operation, the sensor sends unsolicited _Report_ messages on its TX line. In Standard Mode these are sent only when a state changes. In Advanced Mode, an additional status message is sent twice-a-second, with extra data for logging or graphical traces.
+During normal operation, the sensor sends unsolicited _Report_ messages on its TX line. In Standard Mode these are sent only when a state changes. In Advanced Mode, an additional status message is sent every second, with extra data for logging or graphical traces.
 
 
 <!-- ========================================================================================== -->
@@ -67,7 +73,7 @@ During normal operation, the sensor sends unsolicited _Report_ messages on its T
 <a name="occupied-state"></a>
 ## How the Occupied/Unoccupied State is Detected
 
-The module does many mysterious things, but in the end it boils down to just 'Occupied' and 'Unoccupied' states. This is how the documentation describes it.
+The module does many mysterious things, but in the end it boils down to just the 'Occupied' (1) and 'Unoccupied' (0) binary states. This is how the documentation describes it...
 
 The state is 'Occupied' when _motion_ (a moving person) or _static presence_ (a stationary person) is detected. Could 'person' be an animal or any moving object? This is not clear.
 
@@ -83,8 +89,6 @@ The state is 'Occupied' when _motion_ (a moving person) or _static presence_ (a 
 - The 'Static Distance' must be within the 'Static Boundary' setting.
 - If these conditions are not met, the 'Occupied' state will revert to 'Unoccupied' after the 'Unoccupied Delay' period.
 
-When 'Unoccupied', if motion or static presence is again detected, it goes to step 1 or 2.
-
 _But I must say that it does not behave in exactly this way when I observe the states in the MR24HPC1.exe App's graphical view._
 
 
@@ -93,11 +97,16 @@ _But I must say that it does not behave in exactly this way when I observe the s
 <a name="connecting-the-module"></a>
 ## Connecting the MR24HPC1 Module to the Microcontroller (MCU)
 
-> [!CAUTION]
-> This module runs at 5V! DO NOT connect it directly to 3.3V a microcontroller, EVEN IF the microcontroller has 5V-tolerant GPIOs! If the MCU is powered off, but the sensor is still providing 5V to the input (because it has its own power supply), it can still damage the MCU! Also note that NOT ALL GPIOs are 5V-tolerant, so check the data sheet very carefully. \
-> For a 3.3V MCU, you should put a 10..20K ohm current-limiting resistor (depending on the input impedance, which forms a voltage divider) between the sensor's TX output and the MCU's RX input, and also for the S1 and S2 signals if you use them. The MCU's input protection diode will limit the voltage, but it should not pass more than about 0.2mA.
+The board has _3.3V Safe I/O_. Even though the VCC pin requires 5V, the UART pins (TX/RX) and GPIO pins (S1, S2, GP1–GP4) output 3.3V logic signals. This means that a 3.3V or a 5V microcontroller can be used safely.
 
-A serial port which can run at 115200 baud is needed. The example sketch uses `Serial1` for the sensor, with `Serial` being used for the debug output to the Serial Monitor.
+> [!IMPORTANT]
+> The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. Most of the examples on internet are wrong, you do _not_ need level shifters. (If you are worried about it, just put 10K ohm current-limiting resistors between the TX, S1 and S2 outputs and the 3.3V microcontroller inputs to limit the current through the input protection diodes to a very safe level.)
+
+> [!CAUTION]
+> The board needs 5V at 200mA. If powering the microcontroller from USB, the 5V is taken directly from the USB's 5V, so 5V at 200mA is not a problem. If not using USB power, you may need a separate 5V power supply connected to VIN (5V min. 1A). Powering it via the barrel connector uses the onboard 5V regulator, which might not be able to supply the additional 200mA. 
+
+
+A serial port which runs at 115200 baud is required. The example sketch uses `Serial1` for the sensor, with `Serial` being used for the debug output to the Serial Monitor.
 
 Because this library references a `Stream` pointer, it can use either `HardwareSerial` or `SoftwareSerial`. 
 
@@ -107,10 +116,10 @@ With `SoftwareSerial`, you can use almost any two GPIO pins for RX and TX. But S
 
 **2mm Pin Spacing :-(**
 
-The board's male pin headers orr the UART and SWD connections have 2mm spacing. This is VERY annoying because the standard spacing is 2.54mm. Not many people have 2mm female connectors, so you'll probably have to buy some. It is not a good idea to force 2.54mm Dupont jumpers onto these smaller pins because they will be bent, and the connections are not reliable due to the smaller pin width, as I found out. (_Note for Seeed Studio: The cables and connectors should be supplied with the module. And always use standard 2.54mm connectors in future products._)
+The board's male pin headers for the UART and SWD connections have 2mm spacing. This is very annoying because the standard spacing is 2.54mm (0.1 inch). Not many people have 2mm female connectors, so you'll probably have to buy some. It is not a good idea to force 2.54mm Dupont jumpers onto the small pins because they will be bent, and the connections are not reliable due to the smaller pin width, as I found out. 
 
 
-<!-- TODO diagram and photo -->
+<!-- TODO connectoin diagram and photo -->
 
 
 <!-- ========================================================================================== -->
@@ -118,17 +127,17 @@ The board's male pin headers orr the UART and SWD connections have 2mm spacing. 
 <a name="configuration"></a>
 ## Configuring the Sensor
 
-By default, the library does not enable the configuration methods. Add `#define MR24HPC1_ENABLE_CONFIG` before `#include "MR24HPC1mmWave.h"` to enable the configuration methods, as shown in the example sketch.
+By default, this library does not enable the configuration methods. You must add `#define MR24HPC1_ENABLE_CONFIG` before `#include "MR24HPC1mmWave.h"` to enable the configuration methods, as shown in the example sketch.
 
-At startup, the example sketch displays the current sensor configuration with `printParameters()`. Run this once to see your board's configuration. (Tip: You can put `return;` at the start of `loop()` so the display does not scroll up with multiple report messages, giving you time to view the configuration.)
+At startup, the example sketch displays the current sensor configuration with `printParameters()`. Run this once to see your board's configuration. Tip: You can temporarily put `return;` at the start of `loop()` so the display does not scroll up with multiple report messages, giving you time to view or copy/paste the configuration.
 
 Configuration parameters are stored in nonvolatile memory on the sensor board. Once programmed, they remain unchanged until they are re-programmed.
 
-This means that you DO NOT need to re-program them in `setup()` every time the sketch runs. Just program them once, then you don't need the configuration methods any more and you can patch out `#define MR24HPC1_ENABLE_CONFIG`.
+This means that you do not need to re-program them in `setup()` every time the sketch runs. Just program them once, then you don't need the configuration methods any more and you can patch out `#define MR24HPC1_ENABLE_CONFIG`. 
 
-Parameters can either be programmed with a 'one-time programming sketch' which calls the `setXXX()` methods. Or they can be programmed using the Windows `MR24HPC1.exe` application described in the next section. You cand also do this with the Seeed Studio app described in their wiki, but (allegedly) it's a bit weird, and the smoothed analog-style graphical views make it hard to see what's happening. The _mumanchu_ app lets you see the correlation between the digital signals and the sensor events.
+Parameters can either be programmed with a 'one-time programming sketch' which calls the `setXXX()` methods. Or they can be programmed using the Windows `MR24HPC1.exe` application described in the next section. You could also use the Seeed Studio app described in their wiki, but (allegedly) it's a bit weird, and the smoothed analog-style graphical view makes it hard to see what's happening. The _mumanchu_ app lets you see the correlation between the digital signals and the sensor events.
 
-The configuration parameters are described here in the _mumanchu_ MR24HPC1.exe configurator User Manual, \
+The configuration parameters are described here in the 'MR24HPC1 Configurator User Manual', \
 https://muman.ch/muman/index.htm?muman-mr24hpc1-mmwave-sensor.htm#muman-mr24hpc1-parameters
 
 <!-- TODO config parameters here? -->
@@ -140,32 +149,35 @@ https://muman.ch/muman/index.htm?muman-mr24hpc1-mmwave-sensor.htm#muman-mr24hpc1
 <a name="windows-application"></a>
 ## Windows Application, MR24HPC1.exe
 
-A Windows application called `MR24HPC1.exe` has been developed for configuration, testing and visualisation. This application will help you understand the configuration parameters and sensor readings.
+A Windows application called `MR24HPC1 mmWave Radar Configuration v1.0` (MR24HPC1.exe) has been developed for configuration, testing and visualisation. This application makes it easier understand the configuration parameters and sensor readings.
+
+It allows all the parameters to be viewed and modified in the board's nonvolatile memory, and it displays all the digital readings graphically. Which readings are shown can be selected, and the graph's time period (scrolling speed) can be chosen.
 
 <!-- <img height="300" alt="MR24HPC1.exe" src="images/mr24hpc1-app.jpg" /> -->
-<img height="300" alt="MR24HPC1.exe" src="https://muman.ch/muman/mr24hpc1-app-1.png" />
-
-> [!NOTE]
-> Windows will have the usual 'Windows Protected Your PC' fit if you try to download and run MR24HPC1.exe, because it is not digitally signed (but neither are many of the Chinese apps). It's very safe though, it does not use any internet connections or even write to the hard drive. So just press 'Run Anyway'.
+<img height="500" alt="MR24HPC1.exe" src="https://muman.ch/muman/mr24hpc1-app-1.png" />
 
 
-An Arduino or other controller is _not needed_ to use the Windows application. The PC connects directly to the mmWave sensor using a _USB-to-5V-Serial Convertor_.
+An Arduino or other controller is _not needed_ to use the Windows application. The PC connects directly to the mmWave sensor using a _USB-to-TTL-Serial Convertor_.
 
-The best converter to use is an _FTDI TTL-232R-5V_, but there are many suitable converters available. Make sure it's the 5V version, because a 3.3V version will not work and may be damaged.
+The best converter is the _FTDI TTL-232R-3V3_, but there are many suitable converters available. You can use a 3.3V or a 5V converter.
 
-**Using an Arduino Uno as a USB-to-serial converter**
 
-The FTDI converter is quite expensive. But an old Arduino Uno can be used instead. These contain the same FTDI FT232 chip, or an equivalent, which does the same thing. To disable the Arduino microcontroller, connect its RESET pin to GND. This prevents the microcontroller from starting up, allowing the FT232 chip to be used for USB-to-TTL RX/TX communications. 
+**Using an old Arduino Uno as a USB-to-serial converter**
 
-Connect the Arduino's 5V and GND to power the sensor, the RX (Pin 0) to the sensors's TX, and TX (Pin 1) to the sensor's RX.
+The FTDI converter is quite expensive. But an old Arduino Uno can be used instead. These contain the FTDI FT232 chip or an equivalent. To disable the Arduino microcontroller, connect its RESET pin to GND. This prevents the microcontroller from starting up, allowing the FT232 chip to be used for USB-to-TTL RX/TX communications. Connect the Arduino's 5V and GND to power the sensor, the RX (Pin 0) to the sensors's TX, and TX (Pin 1) to the sensor's RX.
 
-Now run the _mumanchu_ MR24HPC1.exe, select the USB converter's COM port and press the "Connect" button.
+<!-- TODO pics arduino and FTDI cable connections + adapters -->
+
+Run MR24HPC1.exe, select the USB converter's COM port and press the "Connect" button.
 
 The User Manual for the `MR24HPC1.exe` application is here, \
 https://muman.ch/muman/index.htm?muman-mr24hpc1-mmwave-sensor.htm#muman-mr24hpc1-user-manual
 
 The C# source code for this application (requires Visual Studio 2026 Community Edition) will soon be on github, but until then you can download the executable from here, \
-https://muman.ch/muman/MR24HPC1.exe \
+https://muman.ch/muman/MR24HPC1.exe
+
+> [!IMPORTANT]
+> When you run MR24HPC1.exe, you will hopefully see the encouraging "Windows has protected your PC" message. This is only because the program does not have a Software Signing Certificate yet (but neither do many of the Chinese apps), so you get 'Unknown Publisher' - but you know the publisher - it's _mumanchu_. Press 'More Info', then 'Run Anyway'. This app does not write to the hard drive, and only acesses internet if you press the 'Online Help' button to open the online User Manual on muman.ch.
 
 
 <!-- ========================================================================================== -->
@@ -173,7 +185,7 @@ https://muman.ch/muman/MR24HPC1.exe \
 <a name="class-reference"></a>
 ## Class Reference
 
-Descriptions of each method can found in the source code file [MR24HPC1mmWave.h](src/MR24HPC1mmWave.h). The descriptions are not duplicated here.
+Descriptions of each method are in the source code file [MR24HPC1mmWave.h](src/MR24HPC1mmWave.h). The descriptions are not duplicated here.
 
 If you need to access an instance of this class from more than one .cpp file, split `MR24HPC1mmWave.h` into two files, one with the class definition (.h) and one with the code (.cpp).
 
@@ -290,18 +302,18 @@ public:
 
 [MR24HPC1mmWave-Example.ino](examples/MR24HPC1mmWave-Example/MR24HPC1mmWave-Example.ino)
 
-The example sketch outputs messages to the `Serial` port at 115200 baud. Use a Serial Monitor to display the output. I'm still using the ancient `PuTTy`, but the Arduino Serial Monitor is fine.
+The example sketch outputs messages to the `Serial` port at 115200 baud. Use a Serial Monitor to display this output. I'm still using the ancient `PuTTy`, but the Arduino Serial Monitor is fine.
 
-The shows the messages in hex (`>>>` = sent, `<<<` = received), and also the meaning of each message.
+The output shows the messages in hex (`>>>` = sent, `<<<` = received), and also the meaning of each message.
 
 You can disable the hex messages by commenting out `#define DEBUG` in the example sketch, or by commenting out the `mr24hpc1_logMsg()` statement in the macro, \
 <img alt="disable-hex-log.png" src="images/disable-hex-log.png" />
 
 If both `DEBUG` and `MR24HPC1_ENABLE_CONFIG` are defined, the sketch displays the current configuration under `MR24HPC1 PARAMETERS`.
 
-In `loop()`, it then polls the mmWave sensor for report messages and displays the state as they are received. It also checks for no response from the sensor for over 1 minute, which means it has gone off line.
+In `loop()`, the mmWave sensor is polled for report messages and the states are displayed as they are received. It also checks for no responses from the sensor for over 1 minute, which means it has gone off line.
 
-This is what you should see on the Serial Monitor... 
+TThe Serial Monitor will show something like this... 
 
 ```
 MR24HPC1mmWave Started...
@@ -379,15 +391,38 @@ Moving
 
 ```
 
+<!-- ========================================================================================== -->
+
+<a name="firmware-update"></a>
+## Updating the MR24HPC1 Firmware
+
+The mmWave module may contain an old version of its firmware. Check this by running the example sketch or the MR24HPC1.exe Windows App to display the version number. 
+
+The latest firmware version is (currently) G24VD1SYV001006. Get the latest version from the Seeed Studio wiki (link in References). The firmware should be updated if it's an older version.
+
+The Seeed Studio Wiki contains a detailed description of updating the firmware via the SWD/J-TAG pins. This requires the _very expensive_ (CHF600) "J-Link Programmer" to do the job, which can only be afforded by professionals. However, I managed to upgrade the firmware using the far cheaper "J-Link EDU Mini".
+
+**Using the "J-Link EDU Mini"**
+
+At CHF60, the "SEGGER J-Link EDU Mini" version is about one-tenth the cost of the professional version. Use it with the free "J-Flash Lite" application.
+
+"J-Flash Lite" is part of the "J-Link Software and Documentation Pack" which you can download from segger.com.
+
+Open `JFlashLite.exe` from the installation directory, and select the Target Device `AT32A403ARGT7` and Target Interface 'SWD'. The programming address should be 0x08000000. If you don't see the AT32A403ARGT7 device in the list, download the latest "Pack_Segger_AT32F4xx_vx.x.x.zip" file and run "Segger_AT32F4xx_AddOn.exe" to add the AT32F4xx devices to the J-Link database for J-Flash to use.
+
+The firmware version I installed is G24VD1SYV001006, from file "Jlink_MR24HPC1-20230302.bin" which was downloaded from the Seeed Studio wiki page (link in References section). They have not released a new version since March 2023, so they have probably stopped further development of this product.
+
+<img height="300" alt="J-Flash Lite" src="images/j-flash-lite.png" />
+
 
 <!-- ========================================================================================== -->
 
 <a name="advantages"></a>
 ## Why Use This Library?
 
-There are only a couple of other MR24HPC1 libraries out there, but this library has several advantages...
+There are a couple of other MR24HPC1 libraries out there, but this library has some advantages...
 
-- It contains methods to configure all the sensor's parameters, but only if you `#define MR24HPC1_ENABLE_CONFIG`. Normally you only do this once, then you can patch out all the configuration methods.
+- It contains methods to configure all the sensor's parameters, but only if you `#define MR24HPC1_ENABLE_CONFIG`. Normally you only configure them once, then you can patch out all the configuration methods.
 
 - Optionally displays all messages sent and received, in hex. This is very useful for testing and understanding the binary protocol.
 
@@ -402,39 +437,6 @@ There are only a couple of other MR24HPC1 libraries out there, but this library 
 - The library source code in `MR24HPC1mmWave.h` contains useful comments describing what each method does, and why.
 
 - It's been tested on STM32, SAMD, AVR, ESP32 and ESP8266 microcontrollers.
-
-
-<!-- ========================================================================================== -->
-
-<a name="firmware-update"></a>
-## Updating the Firmware
-
-The mmWave module may contain an old version of its firmware. Check this by running the example sketch to display the version number. 
-
-The latest firmware version is (currently) G24VD1SYV001006. Check the Seeed Studio wiki for the latest version. The firmware should be updated if it's older.
-
-
-<!--
-TODO can a cheap ST-LINK device be used?
-TODO use STM-Cube programmer and ST-LINK/V2 USB ??
-TODO nake adapter cable for standard SWD
--->
-
-
-The Seeed Studio Wiki contains a detailed section on updating the firmware via the SWD/J-TAG pins, but this requires the very expensive "J-Link Programmer" to do the job, which can only be afforded by professionals. However, I managed to upgrade the firmware using the far cheaper "J-Link EDU Mini" version with the free "SEGGER J-Flash Lite" application. At CHF60, the J-Link EDU Mini version is about one-tenth the cost of the professional version.
-
-First I had to download the "Pack_Segger_AT32F4xx_v1.3.3.zip" file and run "Segger_AT32F4xx_AddOn.exe" to add the AT32F4xx devices to the J-Link database for J-Flash to use. Device 'AT32F403ARGT7' must be selected as the target.
-
-It's also possible to update the firmware via the serial port using their own "PackageMake" application (download "PackageMake-v1.1.1.zip"), but that only works for later versions of the firmware. I have not tried this.
-
-I must say that I'm always very dubious about running unsigned Chinese software on my computer. Why don't they Sign their software? Are they not able to get a Software Signing Certificate?
-
-The firmware version I am using is G24VD1SYV001006, from file "Jlink_MR24HPC1-20230302.bin" which was downloaded from the Seeed Studio wiki page (link in References section). They have not released a new version since March 2023, so they have probably stopped further development of this old product.
-
-
-<img height="300" alt="J-Flash Lite" src="images/j-flash-lite.png" />
-
-
 
 
 <!-- ========================================================================================== -->
@@ -454,7 +456,8 @@ https://files.seeedstudio.com/wiki/mmWave-radar/24GHz_mmWave_Sensor-Human_Static
 **MR24HPC1 Data Sheet (2023)** \
 https://files.seeedstudio.com/wiki/mmWave-radar/24GHz_mmWave_Sensor-Human_Static_Presence_Module_Lite_Datasheet.pdf
 
-**IcLegend S3KM111L Brochure** \
+**ICLegend S3KM111L Brochure** \
+This is not the data sheet \
 https://edworks.co.kr/wp-content/uploads/2023/10/S3KM111L_Brochure.pdf
 
 **Seeed Studio MR24HPC1 Library** \
@@ -462,12 +465,12 @@ This library is linked from their wiki page \
 https://github.com/limengdu/Seeed_24GHz_Human_Static_Presence_Module_Lite
 
 **The Other MR24HPC1 Library** \
-This one's even bigger than mine!
+This one's even bigger than mine! \
 https://github.com/taunoe/mr24hpc1-radar
 
-**Visual Micro ** \
-Recommended for developing Arduino apps using Microsoft Visual Studio 2026 Community Edition \
-This combination provides excellent editing and debug features! \
+**Visual Micro** \
+Visual Micro is recommended for developing Arduino-style apps using Microsoft Visual Studio 2026 Community Edition \
+This combination provides excellent editing and debugging features, and Visual Studio can also be used for developing desktop and mobile applications \
 https://www.visualmicro.com/
 
 
