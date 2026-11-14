@@ -2,6 +2,12 @@
 
 The "MR24HPC1 24GHz mmWave Sensor Human Static Presence Module Lite" from Seeed Studio has a 5m range.  
 
+> [!IMPORTANT]
+> The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. Most of the examples on internet are wrong, you do _not_ need level shifters.
+
+> [!CAUTION]
+> The board needs 5V at 200mA. If powering the microcontroller from USB, the 5V is taken directly from the USB's 5V, so 5V at 200mA is not a problem. If not using USB power, you may need a separate 5V power supply connected to VIN (min. 5V 1A). Powering via the barrel connector uses the onboard 5V regulator, which might not be able to supply an additional 200mA. 
+
 Serial communications uses a proprietary binary protocol at a fixed speed of 115200 baud with the usual TX and RX pins. 
 
 <img height="300" alt="mr24hpc1 boards" src="images/mr24hpc1-boards.jpg" />
@@ -14,13 +20,7 @@ There is a very similar mmWave board from MicRadar, called the R24DVD1 (see the 
 
 Strangely, the ProductModel reported by the Seeed Studio MR24HPC is "R24DVD1", which is the name of MicRadar product.
 
-> [!IMPORTANT]
-> The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. Most of the examples on internet are wrong, you do _not_ need level shifters.
-
-> [!CAUTION]
-> The board needs 5V at 200mA. If powering the microcontroller from USB, the 5V is taken directly from the USB's 5V, so 5V at 200mA is not a problem. If not using USB power, you may need a separate 5V power supply connected to VIN (min. 5V 1A). Powering via the barrel connector uses the onboard 5V regulator, which might not be able to supply an additional 200mA. 
-
-> [!NOTE]
+> [!TIP]
 > There's another _mumanchu_ library for the cheaper C4001 mmWave sensors (12m and 25m range) from DFRobot, \
 > https://github.com/mumanchu/C4001mmWave
 
@@ -53,7 +53,7 @@ The sensor transmits a complex 24GHz band millimetre-wave radar signal and recei
 
 Because it's radar, it can "see through" some objects, clothes, thin walls and windows. For this reason it can be configured to reject signals below a certain intensity (energy level) or a certain distance (boundary). The module can be mounted inside a thin plastic enclosure, such as a surveillance camera enclosure, which is transparent to the radar signals.
 
-Metal objects are not transparent to the radar signals and are highly reflective. Vibrating metal objects such as fans and air conditioning units can cause the reflected signal to be misinterpreted. There are several configuration parameters which can be used to reduce the effects of this noise. People wearing clothes are less reflective than solid static objects, which is why motion is used to detect human presence. (You should use the "Bedroom" and "Bathroom" presets if the targets are not wearing clothes :-)
+Metal objects are not transparent to the radar signals and are highly reflective. Vibrating metal objects such as fans and air conditioning units can cause the reflected signal to be misinterpreted. There are several configuration parameters which can be used to reduce the effects of this noise. People wearing clothes are less reflective than solid static objects, which is why motion is used to detect human presence. (You should use the "Bedroom" and "Bathroom" presets if the targets are not wearing clothes ;-)
 
 The radar signal is a cone, which means that it behaves best when mounted on the ceiling, with sensitivity varying from the edge to the centre of the cone. This reflected signal is a "radius" rather than a straight-line distance, and I suspect all the distances are actually radiuses too (or 'radii'). It can be mounted under a chair or a bed because the radar signal passes through the cushions or mattress. Mounting on a wall is possible too, where it will be able to detect humans moving about on the ceiling, but if you don't need that feature then half of the radar's field-of-vision will not be usable.
 
@@ -103,7 +103,7 @@ The board has _3.3V Safe I/O_. Even though the VCC pin requires 5V, the UART pin
 > The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. Most of the examples on internet are wrong, you do _not_ need level shifters. (If you are worried about it, just put 10K ohm current-limiting resistors between the TX, S1 and S2 outputs and the 3.3V microcontroller inputs to limit the current through the input protection diodes to a very safe level.)
 
 > [!CAUTION]
-> The board needs 5V at 200mA. If powering the microcontroller from USB, the 5V is taken directly from the USB's 5V, so 5V at 200mA is not a problem. If not using USB power, you may need a separate 5V power supply connected to VIN (5V min. 1A). Powering it via the barrel connector uses the onboard 5V regulator, which might not be able to supply the additional 200mA. 
+> The board needs 5V at 200mA. If powering the microcontroller from USB, the 5V is taken directly from the USB's 5V, so 5V at 200mA is not a problem. If not using USB power, you may need a separate 5V power supply connected to VIN (5V min. 1A). Powering it via the barrel connector uses the small onboard 5V regulator, which might not be able to supply the additional 200mA. 
 
 
 A serial port which runs at 115200 baud is required. The example sketch uses `Serial1` for the sensor, with `Serial` being used for the debug output to the Serial Monitor.
@@ -157,7 +157,7 @@ It allows all the parameters to be viewed and modified in the board's nonvolatil
 <img height="500" alt="MR24HPC1.exe" src="https://muman.ch/muman/mr24hpc1-app-1.png" />
 
 
-An Arduino or other controller is _not needed_ to use the Windows application. The PC connects directly to the mmWave sensor using a _USB-to-TTL-Serial Convertor_.
+An Arduino or other controller is _not needed_ to use the Windows application. The PC connects directly to the mmWave sensor using a _USB-to-TTL-Serial Converter_.
 
 The best converter is the _FTDI TTL-232R-3V3_, but there are many suitable converters available. You can use a 3.3V or a 5V converter.
 
@@ -168,7 +168,7 @@ The FTDI converter is quite expensive. But an old Arduino Uno can be used instea
 
 <!-- TODO pics arduino and FTDI cable connections + adapters -->
 
-Run MR24HPC1.exe, select the USB converter's COM port and press the "Connect" button.
+Run MR24HPC1.exe, select the USB converter's COM port and press the "Connect" button. To find out which COM port to use, open Windows' Device Manager and check the 'Ports (COM & LPT)' branch.
 
 The User Manual for the `MR24HPC1.exe` application is here, \
 https://muman.ch/muman/index.htm?muman-mr24hpc1-mmwave-sensor.htm#muman-mr24hpc1-user-manual
@@ -188,6 +188,8 @@ https://muman.ch/muman/MR24HPC1.exe
 Descriptions of each method are in the source code file [MR24HPC1mmWave.h](src/MR24HPC1mmWave.h). The descriptions are not duplicated here.
 
 If you need to access an instance of this class from more than one .cpp file, split `MR24HPC1mmWave.h` into two files, one with the class definition (.h) and one with the code (.cpp).
+
+All _mumanchu_ source code uses tabs, and tabs should be set to 4 spaces. If not, it may not look very pretty. 
 
 
 ```cpp
@@ -287,9 +289,10 @@ public:
     uint convertDistanceToCm(uint distance);
     int convertMotionToCmPerSecond(uint motion);
 
-#ifdef DEBUG
+    #ifdef DEBUG
     void printParameters();
-#endif
+    #endif
+
     #endif      // #ifdef MR24HPC1_ENABLE_CONFIG
 };
 ```
@@ -412,7 +415,7 @@ Open `JFlashLite.exe` from the installation directory, and select the Target Dev
 
 The firmware version I installed is G24VD1SYV001006, from file "Jlink_MR24HPC1-20230302.bin" which was downloaded from the Seeed Studio wiki page (link in References section). They have not released a new version since March 2023, so they have probably stopped further development of this product.
 
-<img height="300" alt="J-Flash Lite" src="images/j-flash-lite.png" />
+<img height="300" alt="J-Flash Lite" src="images/j-flash-lite.jpg" />
 
 
 <!-- ========================================================================================== -->
@@ -469,8 +472,7 @@ This one's even bigger than mine! \
 https://github.com/taunoe/mr24hpc1-radar
 
 **Visual Micro** \
-Visual Micro is recommended for developing Arduino-style apps using Microsoft Visual Studio 2026 Community Edition \
-This combination provides excellent editing and debugging features, and Visual Studio can also be used for developing desktop and mobile applications \
+Visual Micro is recommended for developing Arduino-style apps using Microsoft Visual Studio 2026 Community Edition. This combination provides excellent editing and debugging features, and Visual Studio can also be used for developing desktop and mobile applications \
 https://www.visualmicro.com/
 
 
