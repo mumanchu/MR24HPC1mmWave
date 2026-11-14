@@ -306,8 +306,9 @@ The example sketch outputs messages to the `Serial` port at 115200 baud. Use a S
 
 The output shows the messages in hex (`>>>` = sent, `<<<` = received), and also the meaning of each message.
 
-You can disable the hex messages by commenting out `#define DEBUG` in the example sketch, or by commenting out the `mr24hpc1_logMsg()` statement in the macro, \
-<img alt="disable-hex-log.png" src="images/disable-hex-log.png" />
+You can disable the hex messages by commenting out `#define DEBUG` in the example sketch, or by commenting out the `mr24hpc1_logMsg()` statement in the macro, 
+
+<img width="650" alt="disable-hex-log.png" src="images/disable-hex-log.png" />
 
 If both `DEBUG` and `MR24HPC1_ENABLE_CONFIG` are defined, the sketch displays the current configuration under `MR24HPC1 PARAMETERS`.
 
