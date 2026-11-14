@@ -5,9 +5,6 @@ The "MR24HPC1 24GHz mmWave Sensor Human Static Presence Module Lite" from Seeed 
 > [!IMPORTANT]
 > The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. Most of the examples on internet are wrong, you do _not_ need level shifters.
 
-> [!CAUTION]
-> The board needs 5V at 200mA. If powering the microcontroller from USB, the 5V is taken directly from the USB's 5V, so 5V at 200mA is not a problem. If not using USB power, you may need a separate 5V power supply connected to VIN (min. 5V 1A). Powering via the barrel connector uses the onboard 5V regulator, which might not be able to supply an additional 200mA. 
-
 Serial communications uses a proprietary binary protocol at a fixed speed of 115200 baud with the usual TX and RX pins. 
 
 <img height="300" alt="mr24hpc1 boards" src="images/mr24hpc1-boards.jpg" />
