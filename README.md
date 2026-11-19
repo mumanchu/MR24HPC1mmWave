@@ -3,7 +3,7 @@
 The "MR24HPC1 24GHz mmWave Sensor Human Static Presence Module Lite" from Seeed Studio has a 5m range.  
 
 > [!IMPORTANT]
-> The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. There is no mention of the board's RX input not being 5V tolerant. But to be safe, put a 10k resistor between the 5V MCU's TX and the MR24HPC1's RX to limit the current through the protection diodes.
+> The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. There is no mention of the board's RX input not being 5V tolerant. But to be safe, put a 10k resistor between the 5V MCU's TX output and the MR24HPC1's RX input to limit the current through the protection diodes.
 
 Serial communications uses a proprietary binary protocol at a fixed speed of 115200 baud with the usual TX and RX pins. 
 
@@ -97,7 +97,7 @@ _But I must say that it does not behave in exactly this way when I observe the s
 The board has _3.3V Safe I/O_. Even though the VCC pin requires 5V, the UART pins (TX/RX) and GPIO pins (S1, S2, GP1–GP4) output 3.3V logic signals. This means that a 3.3V or a 5V microcontroller can be used safely.
 
 > [!IMPORTANT]
-> The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. There is no mention of the board's RX input not being 5V tolerant. But to be safe, put a 10k resistor between the 5V MCU's TX and the MR24HPC1's RX to limit the current through the protection diodes.
+> The board must be powered by 5V. However, the RX/TX and GPIO signals are 3.3V (I checked this with an oscilloscope), so it _can_ be used safely with 3.3V microcontrollers. There is no mention of the board's RX input not being 5V tolerant. But to be safe, put a 10k resistor between the 5V MCU's TX output and the MR24HPC1's RX input to limit the current through the protection diodes.
 
 > [!CAUTION]
 > The board needs 5V at 200mA. If powering the microcontroller from USB, the 5V is taken directly from the USB's 5V, so 5V at 200mA is not a problem. If not using USB power, you may need a separate 5V power supply connected to VIN (5V min. 1A). Powering it via the barrel connector uses the small onboard 5V regulator, which might not be able to supply the additional 200mA. 
