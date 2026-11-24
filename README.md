@@ -153,17 +153,16 @@ It allows all the parameters to be viewed and modified in the board's nonvolatil
 <!-- <img height="300" alt="MR24HPC1.exe" src="images/mr24hpc1-app.jpg" /> -->
 <img height="500" alt="MR24HPC1.exe" src="https://muman.ch/muman/mr24hpc1-app-1.png" />
 
-
 An Arduino or other controller is _not needed_ to use the Windows application. The PC connects directly to the mmWave sensor using a _USB-to-TTL-Serial Converter_.
 
-The best converter is the _FTDI TTL-232R-3V3_, but there are many suitable converters available. You can use a 3.3V or a 5V converter.
+The best converter is the _FTDI TTL-232R-3V3_, but there are many suitable converters available. You must use a 3.3V converter. The converter will also supply the 5V (USB) power needed by the sensor.
 
-
+<!--
+5V is not safe!
 **Using an old Arduino Uno as a USB-to-serial converter**
 
 The FTDI converter is quite expensive. But an old Arduino Uno can be used instead. These contain the FTDI FT232 chip or an equivalent. To disable the Arduino microcontroller, connect its RESET pin to GND. This prevents the microcontroller from starting up, allowing the FT232 chip to be used for USB-to-TTL RX/TX communications. Connect the Arduino's 5V and GND to power the sensor, the RX (Pin 0) to the sensors's TX, and TX (Pin 1) to the sensor's RX.
-
-<!-- TODO pics arduino and FTDI cable connections + adapters -->
+-->
 
 Run MR24HPC1.exe, select the USB converter's COM port and press the "Connect" button. To find out which COM port to use, open Windows' Device Manager and check the 'Ports (COM & LPT)' branch.
 
